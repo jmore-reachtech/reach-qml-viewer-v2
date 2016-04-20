@@ -1,0 +1,8 @@
+# default messages
+# these are used if there is not match
+G:test.value=%s,T:t=%s
+G:meter.value=%s,T:m=%s
+M:t=%s,T:test.value=%s
+M3:t=%s,T:test.value=%s
+M:%s,T:%s
+G:%s,T:%s
