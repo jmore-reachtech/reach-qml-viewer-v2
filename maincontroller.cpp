@@ -34,7 +34,8 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
     else
         disableHeartbeat();
 
-
+    /* Add a connection to the view statusChanged signal */
+    connect(m_view, SIGNAL(statusChanged(QQuickView::Status)), this, SLOT(onViewStatusChanged(QQuickView::Status)));
 
     /* Load and parse the translate file. */
     m_transLator->loadTranslations();
@@ -313,9 +314,7 @@ void MainController::onClientDisconnected()
     m_mutex.unlock();
 
     if (m_clients == 0)
-    {
         emit notReadyToSend();
-    }
 
     qDebug() << "[QMLVIEWER] Clients connected:" << m_clients;
 }
@@ -337,7 +336,7 @@ void MainController::setJsonProperty(QString object, QString property, QString v
 
     if(!doc.isNull())
     {
-        if(doc.isObject())
+        if(doc.isObject() || doc.isArray())
         {
             jsonVariant = doc.toVariant();
         }
@@ -388,4 +387,12 @@ void MainController::setProperty(QString object, QString property, QString value
     if (m_enableAck)
         sendMessage("LUOK");
 
+}
+
+void MainController::onViewStatusChanged(QQuickView::Status status)
+{
+    if (status == 1)
+        emit readyToSend();
+    else if (status == 0)
+        emit notReadyToSend();
 }

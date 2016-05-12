@@ -52,6 +52,7 @@ private slots:
     void onHeartbeatTimerTimeout();
     void setJsonProperty(QString object, QString property, QString value);
     void setProperty(QString object, QString property, QString value);
+    void onViewStatusChanged(QQuickView::Status status);
 
 private:
     MainView *m_view;
