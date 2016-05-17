@@ -10,7 +10,6 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
   ,m_view(view)
   ,m_settings(new Settings(this))
   ,m_screen(new Screen(view, screenSaverTimeout, screenOriginalBrightness, screenDimBrightness, this))
-  ,m_transLator(new Translator(translateFile, this))
   ,m_heartbeatText(HEARTBEAT_TEXT)
   ,m_heartbeatResponseText(HEARTBEAT_RESPONSE_TEXT)
   ,m_heartbeat_interval(0)
@@ -37,37 +36,41 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
     /* Add a connection to the view statusChanged signal */
     connect(m_view, SIGNAL(statusChanged(QQuickView::Status)), this, SLOT(onViewStatusChanged(QQuickView::Status)));
 
-    /* Load and parse the translate file. */
-    m_transLator->loadTranslations();
-
     m_clients = 0;
 
-    //Create the TCP string servers
+    m_enableTranslator = false;
+
+    /* Create the TCP string servers and add connections */
     int i = 0;
     foreach(const QJsonValue &v, tcpServers)
     {
-        StringServer *stringServer =  new StringServer(this, v.toObject().value("port").toInt(), v.toObject().value("parse_json").toBool(),
-                                                  v.toObject().value("translate").toBool(), v.toObject().value("translate_id").toString(),
-                                                  v.toObject().value("primary_connection").toBool());
-        connect(stringServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
-        connect(stringServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
-                , this, SLOT(onMessageAvailable(QByteArray, bool, bool, QString)));
-        connect(stringServer, SIGNAL(ClientConnected()), this, SLOT(onClientConnected()));
-        connect(stringServer, SIGNAL(ClientDisconnected()), this, SLOT(onClientDisconnected()));
+        if (v.toObject().value("enabled").toBool())
+        {
+            StringServer *stringServer =  new StringServer(this, v.toObject().value("port").toInt(), v.toObject().value("parse_json").toBool(),
+                                                           v.toObject().value("translate").toBool(), v.toObject().value("translate_id").toString(),
+                                                           v.toObject().value("primary_connection").toBool());
+            if (v.toObject().value("translate").toBool() == true)
+                m_enableTranslator = true;
+            connect(stringServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
+            connect(stringServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
+                    , this, SLOT(onMessageAvailable(QByteArray, bool, bool, QString)));
+            connect(stringServer, SIGNAL(ClientConnected()), this, SLOT(onClientConnected()));
+            connect(stringServer, SIGNAL(ClientDisconnected()), this, SLOT(onClientDisconnected()));
 
-        if (stringServer->Start())
-        {
-            m_stringServerList.append(stringServer);
-            i += 1;
-        }
-        else
-        {
-            delete stringServer;
+            if (stringServer->Start())
+            {
+                m_stringServerList.append(stringServer);
+                i += 1;
+            }
+            else
+            {
+                delete stringServer;
+            }
         }
     }
 
 
-    //Create the Serial Servers
+    /* Create the Serial Servers and add the connections */
     i = 0;
     foreach(const QJsonValue &v, serialServers)
     {
@@ -78,6 +81,9 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
             connect(serialServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
             connect(serialServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
                     , this, SLOT(onMessageAvailable(QByteArray, bool, bool, QString)));
+
+            if (v.toObject().value("translate").toBool() == true)
+                m_enableTranslator = true;
 
             if (serialServer->Start())
             {
@@ -92,7 +98,14 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
 
     }
 
-     m_view->show();
+    if (m_enableTranslator){
+        /* Initialize the Translator object */
+        m_transLator = new Translator(translateFile, this);
+        /* Load and parse the translate file. */
+        m_transLator->loadTranslations();
+    }
+
+    m_view->show();
 }
 
 MainController::~MainController()
@@ -119,11 +132,17 @@ MainController::~MainController()
 
 bool MainController::sendTCPMessage(QString msg, int port)
 {
-    QString translatedMessage = m_transLator->translateGuiMessage(msg);
-    if (translatedMessage.length() == 0)
+    QString translatedMessage = msg;
+
+    /* Translate the message if we need to. */
+    if (m_enableTranslator)
     {
-        qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
-        return false;
+        translatedMessage = m_transLator->translateGuiMessage(msg);
+        if (translatedMessage.length() == 0)
+        {
+            qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
+            return false;
+        }
     }
 
     for (int i=0; i < m_stringServerList.length(); i++)
@@ -142,11 +161,17 @@ bool MainController::sendTCPMessage(QString msg, int port)
 
 bool MainController::sendSerialMessage(QString msg, QString portName)
 {
-    QString translatedMessage = m_transLator->translateGuiMessage(msg);
-    if (translatedMessage.length() == 0)
+    QString translatedMessage = msg;
+
+    /* Translate the message if we need to. */
+    if (m_enableTranslator)
     {
-        qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
-        return false;
+        translatedMessage = m_transLator->translateGuiMessage(msg);
+        if (translatedMessage.length() == 0)
+        {
+            qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
+            return false;
+        }
     }
 
     for (int i=0; i < m_serialServerList.length(); i++)
@@ -165,11 +190,17 @@ bool MainController::sendSerialMessage(QString msg, QString portName)
 
 bool MainController::sendMessage(QString msg)
 {
-    QString translatedMessage = m_transLator->translateGuiMessage(msg);
-    if (translatedMessage.length() == 0)
+    QString translatedMessage = msg;
+
+    /* Translate the message if we need to. */
+    if (m_enableTranslator)
     {
-        qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
-        return false;
+        translatedMessage = m_transLator->translateGuiMessage(msg);
+        if (translatedMessage.length() == 0)
+        {
+            qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
+            return false;
+        }
     }
 
     if (m_primaryConnectionClassName == "StringServer")
@@ -202,36 +233,38 @@ void MainController::onMessageAvailable(QByteArray ba, bool parseJson, bool tran
         }
     }
 
-    // translate the the message if we have to
+    /* Translate the the message if we have to. */
     if (translate)
     {
-        message = m_transLator->translateMCUMessage(message, translateID);
+        message = m_transLator->translateMCUMessage(translateID, message);
     }
 
-
-    // Our protocol is obj.prop=value, so split message
+    /* Our protocol is obj.prop=value, so split message. */
     if (message.contains("=") && message.contains("."))
     {
-        QList<QString> values = message.split('=');
-        QList<QString> items = values[0].split('.');
 
-        if (values.count() != 2 && items.count() != 2) {
+        QString value;
+        int pos = message.indexOf("=");
+        value = message.mid(pos + 1, message.length());
+        QString item = message.mid(0, pos);
+        QStringList items = item.split('.');
+
+        if (value.length() == 0 || items.count() != 2) {
             qDebug() << "[QMLVIEWER] Message syntax error." << message;
             if (m_enableAck)
                 sendMessage("SYNERR");
-            return;
         }
         else
         {
-            qDebug() << "[MCU " << translateID << "]: " << items[0] << "." << items[1] << ": " << values[1];
+            qDebug() << "[MCU " << translateID << "]: " << items[0] << "." << items[1] << ": " << value;
             if (parseJson)
-                setJsonProperty(items[0], items[1], values[1]);
+                setJsonProperty(items[0], items[1], value);
             else
-                setProperty(items[0], items[1], values[1]);
+                setProperty(items[0], items[1], value);
         }
     }
-    else{
-        qDebug() << "[QMLVIEWER] Invalid message:" << message;
+    else {
+        qDebug() << "[QMLVIEWER] Invalid message:" << message << " from " << ba;
         if (m_enableAck)
             sendMessage("SYNERR");
     }
@@ -391,7 +424,9 @@ void MainController::setProperty(QString object, QString property, QString value
 
 void MainController::onViewStatusChanged(QQuickView::Status status)
 {
-    if (status == 1)
+    /* Emit the signal right away if the serialserver list is greater than 0.                       */
+    /* If the serial server list is zero, we wait for TCP/IP connections before we emit the signal. */
+    if (status == 1 && m_serialServerList.count() > 0)
         emit readyToSend();
     else if (status == 0)
         emit notReadyToSend();

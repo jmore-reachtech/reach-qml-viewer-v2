@@ -16,8 +16,12 @@ SerialServer::SerialServer(const QJsonValue portInfo, QObject *parent) :
 #ifdef Q_WS_WIN
     m_server->setPortName(jsonObj.value("win_port").toString());
 #else
-    m_server->setPortName(jsonObj.value("linux_port").toString());
+    m_server->setPortName(jsonObj.value("linux_vm_port").toString());
 #endif
+
+    if (QSysInfo::buildCpuArchitecture() == "arm")
+        m_server->setPortName(jsonObj.value("linux_target_port").toString());
+
 
     m_server->setBaudRate(jsonObj.value("baud_rate").toInt(), QSerialPort::AllDirections);
     m_server->setStopBits(getStopBitsEnum(jsonObj.value("stop_bits").toInt()));
@@ -56,7 +60,7 @@ bool SerialServer::Start()
 
 int SerialServer::Send(QString msg)
 {
-    msg.append("\n");
+    msg.append("\r\n");
     int bytes = 0;
     if (m_server->isOpen())
     {

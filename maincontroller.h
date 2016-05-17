@@ -66,8 +66,9 @@ private:
     bool m_parseJSON;
     QObject *m_primaryConnection;
     QString m_primaryConnectionClassName;
-    bool    m_enableAck;
-    bool    m_enableHearbeat;
+    bool m_enableAck;
+    bool m_enableHearbeat;
+    bool m_enableTranslator;
     QString m_heartbeatText;
     QString m_heartbeatResponseText;
     int     m_heartbeat_interval;

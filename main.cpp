@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 
     sb.append(QDir::separator());
     sb.append("settings.json");
+
     // check to see if we have a settings file where we started from
     // if not fall back to system hard coded path
     QFileInfo file(sb.toLatin1());

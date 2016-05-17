@@ -80,6 +80,7 @@ QString Translator::translateGuiMessage(QString message)
 
     if (m_guiHash.contains(key))
     {
+        qDebug() << "[TRANSLATE] GUI key found:" << key;
         return m_guiHash.value(key).message + value;
     }
     else if (m_defaultGuiMessage.set)
@@ -95,11 +96,12 @@ QString Translator::translateMCUMessage(QString origin, QString message)
         return "";
 
     /* see if we have a key */
-    QString key = message.mid(0, message.indexOf("=")+1);
-    QString value = message.mid(message.indexOf("=")+1);
+    QString key = origin + ":" + message.mid(0, message.indexOf("=")+1);
+    QString value = message.mid(message.indexOf("=")+1, message.length());
 
     if (m_mcuHash.contains(key))
     {
+        qDebug() << "[TRANSLATE] MCU key found:" << key;
         return m_mcuHash.value(key).message + value;
     }
     else if (m_mcuDefaultMessages.contains(origin))
