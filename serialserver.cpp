@@ -13,7 +13,7 @@ SerialServer::SerialServer(const QJsonValue portInfo, QObject *parent) :
     m_primaryConnection = jsonObj.value("primary_connection").toBool();
     m_portName = jsonObj.value("port_name").toString();
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
     m_server->setPortName(jsonObj.value("win_port").toString());
 #else
     m_server->setPortName(jsonObj.value("linux_vm_port").toString());
