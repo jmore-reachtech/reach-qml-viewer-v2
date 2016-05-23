@@ -86,6 +86,14 @@ int main(int argc, char *argv[])
         QGuiApplication::quit();
     }
 
+    /* set the viewer background to transparent */
+    QColor color;
+    color.setRedF(0.0);
+    color.setGreenF(0.0);
+    color.setBlueF(0.0);
+    color.setAlphaF(0.0);
+    view.setColor(color);
+    view.setClearBeforeRendering(true);
 
     MainController controller(&view, jsonObj.value("tcp_servers").toArray(), jsonObj.value("serial_port_servers").toArray(),
                               jsonObj.value("translate_file").toString(), jsonObj.value("enable_ack").toBool(),
