@@ -3,7 +3,7 @@ TEMPLATE = app
 QT += qml quick network serialport
 CONFIG += c++11
 
-VERSION = 2.0.1
+VERSION = 2.0.2
 TARGET = qml-viewer
 
 # add #define for the version
