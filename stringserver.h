@@ -29,6 +29,8 @@ signals:
 public slots:
     bool Send(QString msg);
     int getPort();
+    bool getTranslate();
+    QString getTranslateID();
     bool Start();
 
 private slots:

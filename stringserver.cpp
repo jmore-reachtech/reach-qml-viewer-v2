@@ -59,6 +59,16 @@ int StringServer::getPort()
     return m_port;
 }
 
+bool StringServer::getTranslate()
+{
+    return m_translate;
+}
+
+QString StringServer::getTranslateID()
+{
+    return m_translateID;
+}
+
 
 void StringServer::onClientConnected()
 {

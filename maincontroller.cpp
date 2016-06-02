@@ -133,9 +133,28 @@ MainController::~MainController()
 bool MainController::sendTCPMessage(QString msg, int port)
 {
     QString translatedMessage = msg;
+    int numServer = 0;
+
+    /* find the server */
+    for (int i=0; i < m_stringServerList.length(); i++)
+    {
+        if (m_stringServerList[i]->getPort() == port)
+        {
+            numServer = i;
+            break;
+        }
+    }
+
+    if (numServer == 0)
+    {
+        /* Show message that the server with port was not found */
+        qDebug() << "[QMLVIEWER] Error Could not sendTCPMessage.  TCP Server on port " << port << " was not found.";
+        return false;
+    }
+
 
     /* Translate the message if we need to. */
-    if (m_enableTranslator)
+    if (m_enableTranslator && m_stringServerList.at(numServer)->getTranslate())
     {
         translatedMessage = m_transLator->translateGuiMessage(msg);
         if (translatedMessage.length() == 0)
@@ -145,26 +164,37 @@ bool MainController::sendTCPMessage(QString msg, int port)
         }
     }
 
-    for (int i=0; i < m_stringServerList.length(); i++)
-    {
-        if (m_stringServerList[i]->getPort() == port)
-        {
-            m_stringServerList.at(i)->Send(translatedMessage);
-            qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
-            return true;
-        }
-    }
 
-    return false;
+    m_stringServerList.at(numServer)->Send(translatedMessage);
+    qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
+    return true;
 }
 
 
 bool MainController::sendSerialMessage(QString msg, QString portName)
 {
     QString translatedMessage = msg;
+    int numServer = 0;
+
+    /* Find the server */
+    for (int i=0; i < m_serialServerList.length(); i++)
+    {
+        if (m_serialServerList[i]->getPortName() == portName)
+        {
+            numServer = i;
+            break;
+        }
+    }
+
+    if (numServer == 0)
+    {
+        /* Show message that the server with port was not found */
+        qDebug() << "[QMLVIEWER] Error Could not sendSerialMessage.  Serial Server on port " << portName << "was not found.";
+        return false;
+    }
 
     /* Translate the message if we need to. */
-    if (m_enableTranslator)
+    if (m_enableTranslator && m_serialServerList.at(numServer)->getTranslate())
     {
         translatedMessage = m_transLator->translateGuiMessage(msg);
         if (translatedMessage.length() == 0)
@@ -174,17 +204,9 @@ bool MainController::sendSerialMessage(QString msg, QString portName)
         }
     }
 
-    for (int i=0; i < m_serialServerList.length(); i++)
-    {
-        if (m_serialServerList[i]->getPortName() == portName)
-        {
-            m_serialServerList.at(i)->Send(translatedMessage);
-            qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
-            return true;
-        }
-    }
-
-    return false;
+    m_serialServerList.at(numServer)->Send(translatedMessage);
+    qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
+    return true;
 }
 
 
@@ -192,25 +214,41 @@ bool MainController::sendMessage(QString msg)
 {
     QString translatedMessage = msg;
 
-    /* Translate the message if we need to. */
-    if (m_enableTranslator)
-    {
-        translatedMessage = m_transLator->translateGuiMessage(msg);
-        if (translatedMessage.length() == 0)
-        {
-            qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
-            return false;
-        }
-    }
-
     if (m_primaryConnectionClassName == "StringServer")
     {
-       qobject_cast<StringServer*>(m_primaryConnection)->Send(translatedMessage);
+        /* Translate the message if we need to. */
+        if (m_enableTranslator && qobject_cast<StringServer*>(m_primaryConnection)->getTranslate())
+        {
+            translatedMessage = m_transLator->translateGuiMessage(msg);
+            if (translatedMessage.length() == 0)
+            {
+                qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
+                return false;
+            }
+        }
+
+        qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
+        qobject_cast<StringServer*>(m_primaryConnection)->Send(translatedMessage);
+        return true;
     }
     else if (m_primaryConnectionClassName == "SerialServer")
     {
+        /* Translate the message if we need to. */
+        if (m_enableTranslator && qobject_cast<SerialServer*>(m_primaryConnection)->getTranslate())
+        {
+            translatedMessage = m_transLator->translateGuiMessage(msg);
+            if (translatedMessage.length() == 0)
+            {
+                qDebug() << "[QMLVIEWER] Unable to translate message:" << msg;
+                return false;
+            }
+        }
+
+        qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
         qobject_cast<SerialServer*>(m_primaryConnection)->Send(translatedMessage);
+        return true;
     }
+
     return false;
 }
 
