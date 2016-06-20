@@ -42,6 +42,7 @@ public slots:
     Q_INVOKABLE void disableHeartbeat();
     Q_INVOKABLE void enableLookupAck();
     Q_INVOKABLE void disableLookupAck();
+    Q_INVOKABLE QString getStartUpError();
 
 
 private slots:
@@ -53,6 +54,7 @@ private slots:
     void setJsonProperty(QString object, QString property, QString value);
     void setProperty(QString object, QString property, QString value);
     void onViewStatusChanged(QQuickView::Status status);
+    void showError(QString errorMessage);
 
 private:
     MainView *m_view;
@@ -73,6 +75,7 @@ private:
     QString m_heartbeatResponseText;
     int     m_heartbeat_interval;
     QTimer  *m_hearbeatTimer;
+    QString m_startUpError;
 };
 
 #endif // MAINCONTROLLER_H

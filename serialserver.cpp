@@ -52,6 +52,7 @@ bool SerialServer::Start()
     }
     else
     {
+        emit Error("Error with the settings.json file.\nCould not open serial port " + m_server->portName());
         qDebug() << "{QMLVIEWER] Error: Could not open serial port " << m_server->portName() << m_server->errorString();
         return false;
     }

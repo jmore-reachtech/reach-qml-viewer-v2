@@ -9,7 +9,6 @@
 #include <QMetaEnum>
 #include <QDebug>
 
-
 class SerialServer : public QObject
 {
     Q_OBJECT
@@ -27,6 +26,7 @@ signals:
     void MessageAvailable(QByteArray ba, bool parseJson, bool translate, QString translateID);
     void PrimaryConnectionAvailable();
     void ClientConnected(void);
+    void Error(QString error);
 
 public slots:
     int Send(QString msg);

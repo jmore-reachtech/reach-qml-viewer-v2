@@ -9,6 +9,8 @@
 #include "systemdefs.h"
 #include <QFile>
 #include <QTextStream>
+#include <QScreen>
+#include <QGuiApplication>
 
 #define BRIGHTNESS "/sys/class/backlight/backlight.22/brightness"
 
@@ -25,6 +27,8 @@ public slots:
      void setOriginalBrightness();
      bool isDim();
      bool isScreenSaverEnabled();
+     int getScreenWidth();
+     int getScreenHeight();
 
 
 private slots:

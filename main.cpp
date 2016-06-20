@@ -101,17 +101,21 @@ int main(int argc, char *argv[])
                               jsonObj.value("screensaver_timeout").toInt(), jsonObj.value("screen_original_brigtness").toInt(),
                               jsonObj.value("screen_dim_brigtness").toInt());
 
-    qDebug() << "[QMLVIEWER] Loading main qml file:" << jsonObj.value("main_view").toString();
-    view.setSource(QUrl::fromLocalFile(jsonObj.value("main_view").toString()));
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
 
-    if (jsonObj.value("full_screen").toBool()) {
-        view.showFullScreen();
+    //If there is trouble opening up a serial port don't open the main qml file
+    if (controller.getStartUpError().length() == 0)
+    {
+        qDebug() << "[QMLVIEWER] Loading main qml file:" << jsonObj.value("main_view").toString();
+        view.setSource(QUrl::fromLocalFile(jsonObj.value("main_view").toString()));
+        view.setResizeMode(QQuickView::SizeRootObjectToView);
+
+        if (jsonObj.value("full_screen").toBool()) {
+            view.showFullScreen();
+        }
+
+        if (jsonObj.value("hide_curosr").toBool()) {
+            view.setCursor(QCursor( Qt::BlankCursor ));
+        }
     }
-
-    if (jsonObj.value("hide_curosr").toBool()) {
-        view.setCursor(QCursor( Qt::BlankCursor ));
-    }
-
     return app.exec();
 }

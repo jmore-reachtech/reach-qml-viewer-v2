@@ -37,8 +37,8 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
     connect(m_view, SIGNAL(statusChanged(QQuickView::Status)), this, SLOT(onViewStatusChanged(QQuickView::Status)));
 
     m_clients = 0;
-
     m_enableTranslator = false;
+    m_startUpError = "";
 
     /* Create the TCP string servers and add connections */
     int i = 0;
@@ -81,6 +81,7 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
             connect(serialServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
             connect(serialServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
                     , this, SLOT(onMessageAvailable(QByteArray, bool, bool, QString)));
+            connect(serialServer, SIGNAL(Error(QString)), this, SLOT(showError(QString)));
 
             if (v.toObject().value("translate").toBool() == true)
                 m_enableTranslator = true;
@@ -360,6 +361,11 @@ void MainController::disableLookupAck()
     emit lookupAckChanged(false);
 }
 
+QString MainController::getStartUpError()
+{
+    return m_startUpError;
+}
+
 
 void MainController::enableLookupAck()
 {
@@ -468,4 +474,12 @@ void MainController::onViewStatusChanged(QQuickView::Status status)
         emit readyToSend();
     else if (status == 0)
         emit notReadyToSend();
+}
+
+void MainController::showError(QString errorMessage)
+{
+    //Load error.qml file and show the user an error message
+    m_startUpError = errorMessage;
+    m_view->setSource(QUrl(QStringLiteral("qrc:/error.qml")));
+
 }

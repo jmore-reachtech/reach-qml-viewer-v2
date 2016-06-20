@@ -51,6 +51,26 @@ bool Screen::isScreenSaverEnabled()
     return m_screenSaverEnabled;
 }
 
+int Screen::getScreenWidth()
+{
+    foreach (QScreen *screen, QGuiApplication::screens())
+    {
+        return screen->availableGeometry().width();
+    }
+
+    return 640;
+}
+
+int Screen::getScreenHeight()
+{
+    foreach (QScreen *screen, QGuiApplication::screens())
+    {
+        return screen->availableGeometry().height();
+    }
+
+    return 480;
+}
+
 
 void Screen::onScreenSaverTimerTimeout()
 {
