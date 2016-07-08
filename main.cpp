@@ -8,6 +8,19 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "systemdefs.h"
+#include <signal.h>
+
+void unixSignalHandler(int signum) {
+    qDebug("[QMLVIEWER] main.cpp::unixSignalHandler(). signal = %s", strsignal(signum));
+
+    /*
+     * Make sure your Qt application gracefully quits.
+     * NOTE - purpose for calling qApp->exit(0):
+     *      1. Forces the Qt framework's "main event loop `qApp->exec()`" to quit looping.
+     *      2. Also emits the QGuiApplication::aboutToQuit() signal. This signal is used for cleanup code.
+     */
+    qApp->exit(0);
+}
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +29,23 @@ int main(int argc, char *argv[])
     QGuiApplication::setOrganizationDomain("reachtech.com");
     QGuiApplication::setApplicationName("Qml-Viewer");
     QGuiApplication::setApplicationVersion(APP_VERSION);
+
+    /* Set a signal handler for a power down or a control-c for clean up purposes */
+    /*if (signal(SIGINT, unixSignalHandler) == SIG_ERR) {
+        qDebug() << "[QML] an error occurred while setting a signal interrupt handler";
+    }*/
+
+    struct sigaction actInt, actQuit;
+    memset((void*)&actInt, 0, sizeof(struct sigaction));
+    actInt.sa_flags = SA_INTERRUPT;
+    actInt.sa_handler = &unixSignalHandler;
+    sigaction(SIGINT, &actInt, NULL);
+
+    memset((void*)&actQuit, 0, sizeof(struct sigaction));
+    actQuit.sa_flags = SA_INTERRUPT;
+    actQuit.sa_handler = &unixSignalHandler;
+    sigaction(SIGQUIT, &actQuit, NULL);
+
     MainView view;
 
     QFileInfo settingsFile;
@@ -99,8 +129,11 @@ int main(int argc, char *argv[])
                               jsonObj.value("translate_file").toString(), jsonObj.value("enable_ack").toBool(),
                               jsonObj.value("enable_heartbeat").toBool(), jsonObj.value("heartbeat_interval").toInt(),
                               jsonObj.value("screensaver_timeout").toInt(), jsonObj.value("screen_original_brigtness").toInt(),
-                              jsonObj.value("screen_dim_brigtness").toInt());
+                              jsonObj.value("screen_dim_brigtness").toInt(), jsonObj.value("enable_watchdog").toBool());
 
+
+    /* handle sigquit and sigint to stop the watchdog if it is running */
+    QObject::connect(&app, SIGNAL(aboutToQuit()), &controller, SLOT(handleSigTerm()) );
 
     //If there is trouble opening up a serial port don't open the main qml file
     if (controller.getStartUpError().length() == 0)
@@ -117,5 +150,7 @@ int main(int argc, char *argv[])
             view.setCursor(QCursor( Qt::BlankCursor ));
         }
     }
+
+
     return app.exec();
 }

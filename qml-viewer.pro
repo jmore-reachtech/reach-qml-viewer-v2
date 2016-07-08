@@ -16,7 +16,8 @@ SOURCES += main.cpp \
     serialserver.cpp \
     translator.cpp \
     screen.cpp \
-    settings.cpp
+    settings.cpp \
+    watchdog.cpp
 
 RESOURCES += \
     qt.qrc
@@ -32,7 +33,8 @@ HEADERS += \
     serialserver.h \
     translator.h \
     screen.h \
-    settings.h
+    settings.h \
+    watchdog.h
 
 
 OTHER_FILES +=

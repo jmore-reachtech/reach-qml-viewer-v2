@@ -14,6 +14,7 @@
 #include "systemdefs.h"
 #include "settings.h"
 #include "screen.h"
+#include "watchdog.h"
 
 class MainController : public QObject
 {
@@ -22,7 +23,7 @@ class MainController : public QObject
 public:
     explicit MainController(MainView *view, QJsonArray tcpServers , QJsonArray serialServers, QString translateFile,
                             bool enableAck, bool enableHeartBeat, int heartBeatInterval,
-                            int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness,
+                            int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness, bool startWatchdog,
                             QObject *parent = 0);
     ~MainController();
 
@@ -44,6 +45,8 @@ public slots:
     Q_INVOKABLE void disableLookupAck();
     Q_INVOKABLE QString getStartUpError();
 
+    // Qt signal handler.
+    void handleSigTerm();
 
 private slots:
     void onMessageAvailable(QByteArray ba, bool parseJson, bool translate, QString translateID);
@@ -76,6 +79,7 @@ private:
     int     m_heartbeat_interval;
     QTimer  *m_hearbeatTimer;
     QString m_startUpError;
+    Watchdog *m_watchdog;
 };
 
 #endif // MAINCONTROLLER_H

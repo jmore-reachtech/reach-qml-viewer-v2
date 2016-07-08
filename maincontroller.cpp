@@ -4,7 +4,7 @@
 
 MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray serialServers,
                                QString translateFile, bool enableAck, bool heartbeat, int heartbeatInterval,
-                               int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness,
+                               int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness, bool startWatchdog,
                                QObject *parent) :
   QObject(parent)
   ,m_view(view)
@@ -14,11 +14,13 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
   ,m_heartbeatResponseText(HEARTBEAT_RESPONSE_TEXT)
   ,m_heartbeat_interval(0)
   ,m_hearbeatTimer(new QTimer(this))
+  ,m_watchdog(new Watchdog(this, startWatchdog))
 {
    /* Define objects that can be used in qml */
     m_view->rootContext()->setContextProperty("connection",this);
     m_view->rootContext()->setContextProperty("settings", m_settings);
     m_view->rootContext()->setContextProperty("screen", m_screen);
+    m_view->rootContext()->setContextProperty("watchdog", m_watchdog);
 
     /* Enable or disable ack */
     if (enableAck)
@@ -128,6 +130,9 @@ MainController::~MainController()
 
     if (m_hearbeatTimer)
         delete m_hearbeatTimer;
+
+    if (m_watchdog)
+        delete m_watchdog;
 }
 
 
@@ -366,6 +371,12 @@ QString MainController::getStartUpError()
     return m_startUpError;
 }
 
+void MainController::handleSigTerm()
+{
+    // shut down the watchdog timer if it was started
+    if (m_watchdog->isStarted())
+        m_watchdog->stop();
+}
 
 void MainController::enableLookupAck()
 {
