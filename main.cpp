@@ -30,11 +30,7 @@ int main(int argc, char *argv[])
     QGuiApplication::setApplicationName("Qml-Viewer");
     QGuiApplication::setApplicationVersion(APP_VERSION);
 
-    /* Set a signal handler for a power down or a control-c for clean up purposes */
-    /*if (signal(SIGINT, unixSignalHandler) == SIG_ERR) {
-        qDebug() << "[QML] an error occurred while setting a signal interrupt handler";
-    }*/
-
+    /* Set a signal handler for a quit or a control-c for clean up purposes */
     struct sigaction actInt, actQuit;
     memset((void*)&actInt, 0, sizeof(struct sigaction));
     actInt.sa_flags = SA_INTERRUPT;
@@ -77,8 +73,21 @@ int main(int argc, char *argv[])
         qDebug() << "[QMLVIEWER] using local settings file:" << sb;
         settingsFile.setFile(file.filePath());
     } else {
-        qDebug() << "[QMLVIEWER] using system defined settings file:" << SYSTEM_SETTINGS_FILE;
-        settingsFile.setFile(SYSTEM_SETTINGS_FILE);
+        //check if there is a settings.json file located at SYSTEM_SETTINGS_FILE.  If not we will create one.
+        file.setFile(SYSTEM_SETTINGS_FILE);
+        if (file.exists()) {
+            qDebug() << "[QMLVIEWER] using system defined settings file:" << SYSTEM_SETTINGS_FILE;
+            settingsFile.setFile(SYSTEM_SETTINGS_FILE);
+        }
+        else {
+            if (QFile::copy(":/settings.json", SYSTEM_SETTINGS_FILE))
+            {
+                 qDebug() << "[QMLVIEWER] created a settings.json file:" << SYSTEM_SETTINGS_FILE;
+                 settingsFile.setFile(SYSTEM_SETTINGS_FILE);
+            }
+            else
+                qDebug() << "[QMLVIEWER] error creating a settings.json file:" << SYSTEM_SETTINGS_FILE;
+        }
     }
 
     QFile jsonFile;
@@ -131,6 +140,14 @@ int main(int argc, char *argv[])
                               jsonObj.value("screensaver_timeout").toInt(), jsonObj.value("screen_original_brigtness").toInt(),
                               jsonObj.value("screen_dim_brigtness").toInt(), jsonObj.value("enable_watchdog").toBool());
 
+    controller.setMainViewPath(jsonObj.value("main_view").toString());
+
+#ifdef Q_OS_LINUX
+    /* Fix the path if main_view does not contain a path entry.
+       This can happen if a user does a copy from a Windows application to the module. */
+    if (controller.getMainViewPath().indexOf("/") < 0)
+        controller.setMainViewPath(controller.getMainViewPath().prepend("/application/src/"));
+#endif
 
     /* handle sigquit and sigint to stop the watchdog if it is running */
     QObject::connect(&app, SIGNAL(aboutToQuit()), &controller, SLOT(handleSigTerm()) );
@@ -138,8 +155,8 @@ int main(int argc, char *argv[])
     //If there is trouble opening up a serial port don't open the main qml file
     if (controller.getStartUpError().length() == 0)
     {
-        qDebug() << "[QMLVIEWER] Loading main qml file:" << jsonObj.value("main_view").toString();
-        view.setSource(QUrl::fromLocalFile(jsonObj.value("main_view").toString()));
+        qDebug() << "[QMLVIEWER] Loading main qml file:" << controller.getMainViewPath();
+        view.setSource(QUrl::fromLocalFile(controller.getMainViewPath()));
         view.setResizeMode(QQuickView::SizeRootObjectToView);
 
         if (jsonObj.value("full_screen").toBool()) {

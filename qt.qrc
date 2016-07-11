@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>error.qml</file>
+        <file>settings.json</file>
     </qresource>
 </RCC>

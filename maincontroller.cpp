@@ -15,6 +15,7 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
   ,m_heartbeat_interval(0)
   ,m_hearbeatTimer(new QTimer(this))
   ,m_watchdog(new Watchdog(this, startWatchdog))
+  ,m_errorTimer(new QTimer(this))
 {
    /* Define objects that can be used in qml */
     m_view->rootContext()->setContextProperty("connection",this);
@@ -133,6 +134,9 @@ MainController::~MainController()
 
     if (m_watchdog)
         delete m_watchdog;
+
+    if (m_errorTimer)
+        delete m_errorTimer;
 }
 
 
@@ -378,6 +382,16 @@ void MainController::handleSigTerm()
         m_watchdog->stop();
 }
 
+void MainController::setMainViewPath(QString path)
+{
+    m_mainViewPath = path;
+}
+
+QString MainController::getMainViewPath()
+{
+    return m_mainViewPath;
+}
+
 void MainController::enableLookupAck()
 {
     m_enableAck = true;
@@ -492,5 +506,17 @@ void MainController::showError(QString errorMessage)
     //Load error.qml file and show the user an error message
     m_startUpError = errorMessage;
     m_view->setSource(QUrl(QStringLiteral("qrc:/error.qml")));
+#ifdef Q_OS_WIN
+    connect(m_errorTimer, SIGNAL(timeout()), this, SLOT(onErrorTimerTimeOut()));
+    m_errorTimer->start(5000);
+#endif
+}
 
+void MainController::onErrorTimerTimeOut()
+{
+    m_errorTimer->stop();
+    m_view->setSource(QUrl::fromLocalFile(m_mainViewPath));
+#ifdef Q_OS_WIN
+    emit readyToSend();
+#endif
 }

@@ -8,6 +8,12 @@ Translator::Translator(QString translateFile , QObject *parent) :
     if (m_translateFile.length() == 0)
         m_translateFile = TRANSLATION_FILE_PATH;
 
+#ifdef Q_OS_LINUX
+    /* Fix the translate file path.  This incase someone copies a project from Windows */
+    if (m_translateFile.indexOf("/") < 0)
+        m_translateFile.prepend("/application/src/");
+#endif
+
     /* Add a watcher to the translate file, so we can reload it when updated. */
     connect(m_watcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onFileChanged(const QString &)));
     m_watcher->addPath(m_translateFile.toLatin1());
@@ -37,7 +43,7 @@ bool Translator::loadTranslations()
     m_defaultGuiMessage.message = "";
     m_mcuDefaultMessages.clear();
 
-    QFile inputFile;
+    QFile inputFile;    
     inputFile.setFileName(m_translateFile.toLatin1());
 
     if (inputFile.open(QIODevice::ReadOnly | QIODevice::Text))

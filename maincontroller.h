@@ -47,6 +47,8 @@ public slots:
 
     // Qt signal handler.
     void handleSigTerm();
+    void setMainViewPath(QString path);
+    QString getMainViewPath();
 
 private slots:
     void onMessageAvailable(QByteArray ba, bool parseJson, bool translate, QString translateID);
@@ -58,6 +60,7 @@ private slots:
     void setProperty(QString object, QString property, QString value);
     void onViewStatusChanged(QQuickView::Status status);
     void showError(QString errorMessage);
+    void onErrorTimerTimeOut();
 
 private:
     MainView *m_view;
@@ -80,6 +83,8 @@ private:
     QTimer  *m_hearbeatTimer;
     QString m_startUpError;
     Watchdog *m_watchdog;
+    QTimer *m_errorTimer;
+    QString m_mainViewPath;
 };
 
 #endif // MAINCONTROLLER_H
