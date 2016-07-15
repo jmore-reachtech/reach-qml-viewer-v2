@@ -8,11 +8,9 @@ Translator::Translator(QString translateFile , QObject *parent) :
     if (m_translateFile.length() == 0)
         m_translateFile = TRANSLATION_FILE_PATH;
 
-#ifdef Q_OS_LINUX
-    /* Fix the translate file path.  This incase someone copies a project from Windows */
-    if (m_translateFile.indexOf("/") < 0)
-        m_translateFile.prepend("/application/src/");
-#endif
+    /* Fix the translate file path.  This is in case someone copies a project from the module*/
+    if (m_translateFile.indexOf("/application/src/") >= 0)
+        m_translateFile.replace("/application/src/", "");
 
     /* Add a watcher to the translate file, so we can reload it when updated. */
     connect(m_watcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onFileChanged(const QString &)));

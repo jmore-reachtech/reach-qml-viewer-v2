@@ -20,22 +20,11 @@ Watchdog::~Watchdog()
 
 bool Watchdog::start()
 {
-    const char *dev = QByteArray(WATCHDOGDEV).constData();
-
     //If the watchdog is already started then don't start
     if (m_started)
     {
         qDebug() << "[QML] watchdog error: watchdog has already been started";
         emit watchdogError(QString("Watchdog error: watchdog has already been started."));
-        return false;
-    }
-
-    fd = open(dev, O_RDWR);
-
-    if (fd == -1)
-    {
-        qDebug() << "[QML] Watchdog Error:  Open failed on " << dev;
-        emit watchdogError(QString("Watchdog open failed on ").append(dev));
         return false;
     }
 
@@ -51,13 +40,6 @@ bool Watchdog::isStarted()
 
 void Watchdog::stop()
 {
-    /* The 'V' value needs to be written into watchdog device file to indicate
-          that we intend to close/stop the watchdog. Otherwise, debug message
-          'Watchdog timer closed unexpectedly' will be printed
-    */
-    write(fd, "V", 1);
-    /* Closing the watchdog device will deactivate the watchdog. */
-    close(fd);
     m_started = false;
 
     //Shut down the timer if it is running
@@ -76,13 +58,7 @@ bool Watchdog::setInterval(int interval)
         return false;
     }
 
-    if (ioctl(fd, WDIOC_SETTIMEOUT, &interval) != 0) {
-        qDebug() << "[QML] Watchdog error : set interval failed.";
-        if (m_started)
-            stop();
-        emit watchdogError("Set interval failed.  Watchdog may not have been started.");
-        return false;
-    }
+    m_interval = interval;
 
     //Check to see if the timer is running
     if (m_timer->isActive())
@@ -97,41 +73,17 @@ bool Watchdog::setInterval(int interval)
 
 int Watchdog::getInterval()
 {
-    int interval;
-    if (ioctl(fd, WDIOC_GETTIMEOUT, &interval) == 0) {
-        return interval;
-    }
-    else {
-        qDebug() << "[QML] watchdog error: get interval failed";
-        if (m_started)
-            stop();
-        emit watchdogError("Get interval failed.  Watchdog may not have been started.");
-    }
-
-    return 0;
+    return m_interval;
 }
 
 bool Watchdog::keepAlive()
 {
-    int size = 0;
-    size =  write(fd, "W", 1);
+    int size = 1;
     qDebug() << "[QML] watchdog kicked.";
     return size;
 }
 
 bool Watchdog::lastBootByWatchDog()
 {
-    int bootstatus;
-    if (ioctl(fd, WDIOC_GETBOOTSTATUS, &bootstatus) == 0) {
-        if (bootstatus != 0)
-            return true;
-    }
-    else{
-        qDebug() << "[QML] watchdog error: get boot status failed.";
-        if (m_started)
-            stop();
-        emit watchdogError("Get boot status failed.  Watchdog may not have been started.");
-    }
-
     return false;
 }
