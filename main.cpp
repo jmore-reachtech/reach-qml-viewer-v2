@@ -48,21 +48,13 @@ int main(int argc, char *argv[])
         qDebug() << "[QMLVIEWER] using local settings file:" << sb;
         settingsFile.setFile(file.filePath());
     } else {
-        //check if there is a settings.json file located at SYSTEM_SETTINGS_FILE.  If not we will create one.
-        file.setFile(SYSTEM_SETTINGS_FILE);
-        if (file.exists()) {
-            qDebug() << "[QMLVIEWER] using system defined settings file:" << SYSTEM_SETTINGS_FILE;
-            settingsFile.setFile(SYSTEM_SETTINGS_FILE);
-        }
-        else {
-            if (QFile::copy(":/settings.json", SYSTEM_SETTINGS_FILE))
+            if (QFile::copy(":/settings.json", file.filePath()))
             {
-                 qDebug() << "[QMLVIEWER] created a settings.json file:" << SYSTEM_SETTINGS_FILE;
-                 settingsFile.setFile(SYSTEM_SETTINGS_FILE);
+                 qDebug() << "[QMLVIEWER] created a settings.json file:" << file.filePath();
+                 settingsFile.setFile(file.filePath());
             }
             else
-                qDebug() << "[QMLVIEWER] error creating a settings.json file:" << SYSTEM_SETTINGS_FILE;
-        }
+                qDebug() << "[QMLVIEWER] error creating a settings.json file:" << file.filePath();
     }
 
     QFile jsonFile;

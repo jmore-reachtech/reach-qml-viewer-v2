@@ -143,7 +143,7 @@ MainController::~MainController()
 bool MainController::sendTCPMessage(QString msg, int port)
 {
     QString translatedMessage = msg;
-    int numServer = 0;
+    int numServer = -1;
 
     /* find the server */
     for (int i=0; i < m_stringServerList.length(); i++)
@@ -155,7 +155,7 @@ bool MainController::sendTCPMessage(QString msg, int port)
         }
     }
 
-    if (numServer == 0)
+    if (numServer == -1)
     {
         /* Show message that the server with port was not found */
         qDebug() << "[QMLVIEWER] Error Could not sendTCPMessage.  TCP Server on port " << port << " was not found.";
@@ -184,7 +184,7 @@ bool MainController::sendTCPMessage(QString msg, int port)
 bool MainController::sendSerialMessage(QString msg, QString portName)
 {
     QString translatedMessage = msg;
-    int numServer = 0;
+    int numServer = -1;
 
     /* Find the server */
     for (int i=0; i < m_serialServerList.length(); i++)
@@ -196,7 +196,7 @@ bool MainController::sendSerialMessage(QString msg, QString portName)
         }
     }
 
-    if (numServer == 0)
+    if (numServer == -1)
     {
         /* Show message that the server with port was not found */
         qDebug() << "[QMLVIEWER] Error Could not sendSerialMessage.  Serial Server on port " << portName << "was not found.";
