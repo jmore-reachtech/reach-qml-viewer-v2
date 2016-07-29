@@ -142,12 +142,21 @@ int main(int argc, char *argv[])
 
     controller.setMainViewPath(jsonObj.value("main_view").toString());
 
-#ifdef Q_OS_LINUX
+
     /* Fix the path if main_view does not contain a path entry.
        This can happen if a user does a copy from a Windows application to the module. */
-    if (controller.getMainViewPath().indexOf("/") < 0)
-        controller.setMainViewPath(controller.getMainViewPath().prepend("/application/src/"));
-#endif
+    if (QSysInfo::buildCpuArchitecture() == "arm")
+    {
+        if (controller.getMainViewPath().indexOf("/") < 0)
+            controller.setMainViewPath(controller.getMainViewPath().prepend("/application/src/"));
+        else if (controller.getMainViewPath().at(0) != '/')
+        {
+            //We need to strip out the path
+            QStringList list = controller.getMainViewPath().split("/");
+            controller.setMainViewPath( "/application/src/" + list.at(list.length()-1));
+        }
+
+    }
 
     /* handle sigquit and sigint to stop the watchdog if it is running */
     QObject::connect(&app, SIGNAL(aboutToQuit()), &controller, SLOT(handleSigTerm()) );

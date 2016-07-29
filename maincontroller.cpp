@@ -126,7 +126,7 @@ MainController::~MainController()
     if (!m_serialServerList.isEmpty())
         qDeleteAll(m_serialServerList);
 
-    if (m_transLator)
+    if (m_enableTranslator && m_transLator)
         delete m_transLator;
 
     if (m_hearbeatTimer)

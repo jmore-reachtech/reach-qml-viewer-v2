@@ -17,10 +17,21 @@ Screen::Screen(QQuickView *view, int screenSaverTimeout, int screenOriginalBrigh
         m_screenSaverEnabled = true;
         //set the original brighness in case the device was shutdown in dim mode
         setBrightness(m_screenOriginalBrightness);
-        connect(m_screenSaverTimer, SIGNAL(timeout()),this,SLOT(onScreenSaverTimerTimeout()));
+        connect(m_screenSaverTimer, SIGNAL(timeout()), this, SLOT(onScreenSaverTimerTimeout()));
         view->installEventFilter(this);
         m_screenSaverTimer->start(m_screenSaverTimeout * 60 * 1000);
     }
+
+    QFile file(SNAPSHOT);
+    if (!file.exists())
+    {
+        file.open(QIODevice::ReadWrite);
+        QTextStream out(&file);
+        out << QString::number(1).toLatin1() << endl;
+        file.close();
+    }
+    m_fileWatcher.addPath(SNAPSHOT);
+    QObject::connect(&m_fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(onTakeSnapShot()));
 }
 
 
@@ -51,6 +62,7 @@ bool Screen::isScreenSaverEnabled()
     return m_screenSaverEnabled;
 }
 
+
 int Screen::getScreenWidth()
 {
     foreach (QScreen *screen, QGuiApplication::screens())
@@ -60,6 +72,7 @@ int Screen::getScreenWidth()
 
     return 640;
 }
+
 
 int Screen::getScreenHeight()
 {
@@ -76,6 +89,34 @@ void Screen::onScreenSaverTimerTimeout()
 {
     setBrightness(m_screenDimBrightness);
     m_dim = true;
+}
+
+void Screen::onTakeSnapShot()
+{
+    QString fileName = "1";
+
+    //We will save the file in this format #.png
+    QDir dir(SCREENSHOT_PATH);
+    QStringList filters;
+    filters << "*.png";
+    QStringList list = dir.entryList(filters, QDir::Files, QDir::Reversed);
+    if (!list.isEmpty())
+    {
+        fileName = list.at(0);
+        fileName = fileName.replace(".png", "");
+        int num = fileName.toInt();
+        num += 1;
+        fileName = QString::number(num);
+    }
+
+    QString path = SCREENSHOT_PATH + fileName + ".png";
+    //Check if director exists
+    if (!QDir(SCREENSHOT_PATH).exists())
+        QDir().mkdir(SCREENSHOT_PATH);
+
+    QImage image = m_view->grabWindow();
+    if (image.save(path, 0, 100))
+        qDebug() << "[QMLVIEWER] saving snapshot " << SCREENSHOT_PATH << path;
 }
 
 

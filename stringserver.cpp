@@ -15,8 +15,10 @@ StringServer::StringServer(QObject *parent, int port, bool parseJson, bool trans
 
 StringServer::~StringServer()
 {
-    if(m_server) {
-        delete(m_server);
+    if (m_server)
+    {
+        m_server->close();
+        delete m_server;
     }
 }
 

@@ -11,8 +11,13 @@
 #include <QTextStream>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QFileSystemWatcher>
+#include <QDateTime>
+#include <QDir>
 
 #define BRIGHTNESS "/sys/class/backlight/backlight.22/brightness"
+#define SNAPSHOT "/tmp/snapshot"
+#define SCREENSHOT_PATH "/application/screenshots/"
 
 class Screen : public QObject
 {
@@ -33,10 +38,12 @@ public slots:
 
 private slots:
     void onScreenSaverTimerTimeout();
+    void onTakeSnapShot();
 
 private:
     QQuickView *m_view;
     QTimer *m_screenSaverTimer;
+    QFileSystemWatcher m_fileWatcher;
     int m_screenSaverTimeout;
     int m_screenOriginalBrightness;
     int m_screenDimBrightness;
