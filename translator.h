@@ -8,6 +8,7 @@
 #include <QTextStream>
 #include <QDebug>
 #include "systemdefs.h"
+#define MAX_MSG_MAP_SIZE 400
 
 struct KeyValue{
     QString marker;
