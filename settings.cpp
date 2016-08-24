@@ -9,7 +9,6 @@ Settings::Settings(QObject *parent) :
 
 Settings::~Settings()
 {
-    qDebug() << "settings destructor";
 }
 
 void Settings::setValue(const QString &key, const QVariant &value)

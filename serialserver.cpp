@@ -32,10 +32,8 @@ SerialServer::SerialServer(const QJsonValue portInfo, QObject *parent) :
 
 SerialServer::~SerialServer()
 {
-    if(m_server) {
+    if (m_server->isOpen())
         m_server->close();
-        delete(m_server);
-    }
 }
 
 bool SerialServer::Start()

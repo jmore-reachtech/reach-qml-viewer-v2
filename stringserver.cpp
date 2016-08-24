@@ -3,7 +3,7 @@
 #include "stringserver.h"
 
 StringServer::StringServer(QObject *parent, int port, bool parseJson, bool translate, QString translateID, bool primaryConnection) : QObject(parent)
-  ,m_server(new QTcpServer)
+  ,m_server(new QTcpServer(this))
 {
     m_port = port;
     m_parseJson = parseJson;
@@ -15,9 +15,11 @@ StringServer::StringServer(QObject *parent, int port, bool parseJson, bool trans
 
 StringServer::~StringServer()
 {
-    if(m_server) {
-        delete(m_server);
-    }
+    if (m_server->isListening())
+        m_server->close();
+
+    if (!m_clients.isEmpty())
+        qDeleteAll(m_clients);
 }
 
 

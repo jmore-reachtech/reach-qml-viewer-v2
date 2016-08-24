@@ -25,10 +25,6 @@ Translator::~Translator()
 {
     if (m_watcher)
         delete m_watcher;
-    /*if (m_guiHash)
-        delete m_guiHash;
-    if (m_mcuHash)
-        delete m_mcuHash;*/
 }
 
 
@@ -49,16 +45,22 @@ bool Translator::loadTranslations()
         qDebug() << "[TRANSLATE] Loading" << m_translateFile;
 
         QTextStream in(&inputFile);
-        int i = 0;
+        int i = 1;
         while (!in.atEnd())
         {
+            if (m_translationCount > MAX_MSG_MAP_SIZE)
+            {
+                qDebug() << "[TRANSLATE] Too many translation rules, maximum allowed: " << MAX_MSG_MAP_SIZE;
+                break;
+            }
+
             QString line = in.readLine();
+
             if (line.isEmpty() || line.startsWith("#") || line.startsWith("/"))
                 qDebug() << "[TRANSLATE] Ignoring line" << i << ":" << line;
             else
                 traslateAddMapping(line, i);
             i+=1;
-
         }
 
         inputFile.close();
@@ -106,7 +108,15 @@ QString Translator::translateMCUMessage(QString origin, QString message)
     if (m_mcuHash.contains(key))
     {
         qDebug() << "[TRANSLATE] MCU key found:" << key;
-        return m_mcuHash.value(key).message + value;
+
+        //We need to replace %d or %s with the value
+        QString message = m_mcuHash.value(key).message;
+        if (message.indexOf("%d") > 0)
+            message = message.replace("%d", value);
+        else if (message.indexOf("%s") > 0)
+            message = message.replace("%s", value);
+
+        return message;
     }
     else if (m_mcuDefaultMessages.contains(origin))
         return message;
@@ -131,6 +141,10 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
          */
 
     QString origin, key, marker, message;
+
+    //Check for empty line
+    if (line == "\n" || line == "\r")
+        return false;
 
     if (line.startsWith("G") || line.startsWith("M"))
     {
@@ -159,6 +173,7 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
             return false;
         }
+
         QString key = originKey[1];
         if (key.indexOf("%d") < 0 && key.indexOf("%s") < 0)
         {
@@ -172,16 +187,11 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
             return false;
         }
+
         QString message = markerMessage[1];
-        if (message.indexOf("%d") < 0 && message.indexOf("%s") < 0)
-        {
-            qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
-            return false;
-        }
-
-
         KeyValue kv;
 
+        //key can only have a %s or %d
         if (key.indexOf("%d") > 0)
         {
             kv.type = "d";
@@ -193,16 +203,6 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             key.replace("%s", "");
         }
 
-        if (message.indexOf("%d") > 0)
-        {
-            message = message.mid(0, message.indexOf("%d"));
-        }
-        else
-        {
-            message = message.mid(0, message.indexOf("%s"));
-        }
-
-
         kv.marker = marker;
         kv.message = message;
 
@@ -210,24 +210,36 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
         if (origin == "G")
         {
             if (key.length() == 0)
-            {
                 m_defaultGuiMessage.set = true;
-            }
             else if (!m_guiHash.contains(key))
                 m_guiHash.insert(key, kv);
+            else
+            {
+                qDebug() << "[TRANSLATE] line " << lineNumber << " not added. GUI key already exists:" << key;
+                return false;
+            }
+
         }
         else
         {
             if (key.length() == 0)
             {
                 if (!m_mcuDefaultMessages.contains(origin))
-                {
                     m_mcuDefaultMessages.insert(origin, key);
+                else
+                {
+                    qDebug() << "[TRANSLATE] line " << lineNumber << " not added. MCU key already exists:" << key;
+                    return false;
                 }
             }
-            else if (!m_mcuHash.contains(key))
+            else if (!m_mcuHash.contains(origin + ":" + key))
             {
                 m_mcuHash.insert(origin + ":" + key, kv);
+            }
+            else
+            {
+                qDebug() << "[TRANSLATE] line " << lineNumber << " not added. MCU key already exists:" << origin + ":" + key;
+                return false;
             }
         }
 

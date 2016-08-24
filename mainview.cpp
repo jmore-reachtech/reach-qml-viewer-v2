@@ -2,5 +2,5 @@
 
 MainView::MainView(QWindow *parent) : QQuickView(parent)
 {
-
 }
+
