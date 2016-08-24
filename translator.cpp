@@ -8,11 +8,9 @@ Translator::Translator(QString translateFile , QObject *parent) :
     if (m_translateFile.length() == 0)
         m_translateFile = TRANSLATION_FILE_PATH;
 
-#ifdef Q_OS_LINUX
     /* Fix the translate file path.  This incase someone copies a project from Windows */
     if (m_translateFile.indexOf("/") < 0)
         m_translateFile.prepend("/application/src/");
-#endif
 
     /* Add a watcher to the translate file, so we can reload it when updated. */
     connect(m_watcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onFileChanged(const QString &)));
@@ -57,6 +55,7 @@ bool Translator::loadTranslations()
             }
 
             QString line = in.readLine();
+
             if (line.isEmpty() || line.startsWith("#") || line.startsWith("/"))
                 qDebug() << "[TRANSLATE] Ignoring line" << i << ":" << line;
             else
@@ -109,7 +108,15 @@ QString Translator::translateMCUMessage(QString origin, QString message)
     if (m_mcuHash.contains(key))
     {
         qDebug() << "[TRANSLATE] MCU key found:" << key;
-        return m_mcuHash.value(key).message + value;
+
+        //We need to replace %d or %s with the value
+        QString message = m_mcuHash.value(key).message;
+        if (message.indexOf("%d") > 0)
+            message = message.replace("%d", value);
+        else if (message.indexOf("%s") > 0)
+            message = message.replace("%s", value);
+
+        return message;
     }
     else if (m_mcuDefaultMessages.contains(origin))
         return message;
@@ -134,6 +141,10 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
          */
 
     QString origin, key, marker, message;
+
+    //Check for empty line
+    if (line == "\n" || line == "\r")
+        return false;
 
     if (line.startsWith("G") || line.startsWith("M"))
     {
@@ -162,6 +173,7 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
             return false;
         }
+
         QString key = originKey[1];
         if (key.indexOf("%d") < 0 && key.indexOf("%s") < 0)
         {
@@ -175,16 +187,11 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
             return false;
         }
+
         QString message = markerMessage[1];
-        if (message.indexOf("%d") < 0 && message.indexOf("%s") < 0)
-        {
-            qDebug() << "[TRANSLATE] line in wrong format" << lineNumber << ":" << line;
-            return false;
-        }
-
-
         KeyValue kv;
 
+        //key can only have a %s or %d
         if (key.indexOf("%d") > 0)
         {
             kv.type = "d";
@@ -195,16 +202,6 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
             kv.type = "s";
             key.replace("%s", "");
         }
-
-        if (message.indexOf("%d") > 0)
-        {
-            message = message.mid(0, message.indexOf("%d"));
-        }
-        else
-        {
-            message = message.mid(0, message.indexOf("%s"));
-        }
-
 
         kv.marker = marker;
         kv.message = message;
@@ -235,11 +232,13 @@ bool Translator::traslateAddMapping(const QString line, int lineNumber)
                     return false;
                 }
             }
-            else if (!m_mcuHash.contains(key))
+            else if (!m_mcuHash.contains(origin + ":" + key))
+            {
                 m_mcuHash.insert(origin + ":" + key, kv);
+            }
             else
             {
-                qDebug() << "[TRANSLATE] line " << lineNumber << " not added. MCU key already exists:" << key;
+                qDebug() << "[TRANSLATE] line " << lineNumber << " not added. MCU key already exists:" << origin + ":" + key;
                 return false;
             }
         }
