@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QMetaEnum>
 #include <QDebug>
+#include "applicationsettings.h"
 
 class SerialServer : public QObject
 {
@@ -16,7 +17,7 @@ class SerialServer : public QObject
     Q_PROPERTY(QString portName READ getPortName)
 
 public:
-    explicit SerialServer(const QJsonValue portInfo, QObject *parent = 0);
+    explicit SerialServer(const SerialServerSetting portInfo, QObject *parent = 0);
     ~SerialServer();
 
     QString getPortName() const {

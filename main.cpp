@@ -1,13 +1,11 @@
 #include <QGuiApplication>
-#include "mainview.h"
-#include "maincontroller.h"
 #include <QFileInfo>
 #include <QDir>
 #include <QSettings>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include "mainview.h"
+#include "maincontroller.h"
 #include "systemdefs.h"
+#include "applicationsettings.h"
 #include <signal.h>
 
 void unixSignalHandler(int signum) {
@@ -21,6 +19,7 @@ void unixSignalHandler(int signum) {
      */
     qApp->exit(0);
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -55,6 +54,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    /* if this application is use by QtCreator we will look for the settings.json file in the qml project folder. */
     if (args.count() == 2)
     {
         sb = args[1];
@@ -64,22 +64,27 @@ int main(int argc, char *argv[])
     }
 
     sb.append(QDir::separator());
-    sb.append("settings.json");
+    sb.append(SETTINGS_FILE);
 
     // check to see if we have a settings file where we started from
     // if not fall back to system hard coded path
     QFileInfo file(sb.toLatin1());
-    if (file.exists()) {
+    if (file.exists())
+    {
         qDebug() << "[QMLVIEWER] using local settings file:" << sb;
         settingsFile.setFile(file.filePath());
-    } else {
+    }
+    else
+    {
         //check if there is a settings.json file located at SYSTEM_SETTINGS_FILE.  If not we will create one.
         file.setFile(SYSTEM_SETTINGS_FILE);
-        if (file.exists()) {
+        if (file.exists())
+        {
             qDebug() << "[QMLVIEWER] using system defined settings file:" << SYSTEM_SETTINGS_FILE;
             settingsFile.setFile(SYSTEM_SETTINGS_FILE);
         }
-        else {
+        else
+        {
             if (QFile::copy(":/settings.json", SYSTEM_SETTINGS_FILE))
             {
                  qDebug() << "[QMLVIEWER] created a settings.json file:" << SYSTEM_SETTINGS_FILE;
@@ -90,58 +95,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    QFile jsonFile;
-    QString json;
-    jsonFile.setFileName(settingsFile.filePath().toLatin1());
-    if (jsonFile.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-          json = jsonFile.readAll();
-          jsonFile.close();
-    }
-    else
-    {
-        qDebug() << "[QMLVIEWER] Could not open Settings file: " << settingsFile.filePath().toLatin1();
-        QGuiApplication::quit();
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());;
-    QJsonObject jsonObj;
-
-    if(!doc.isNull())
-    {
-        if(doc.isObject())
-        {
-            jsonObj = doc.object();
-        }
-        else
-        {
-            qDebug() << "[QMLVIEWER] Settings file: Document is not an object.";
-            QGuiApplication::quit();
-        }
-    }
-    else
-    {
-        qDebug() << "[QMLVIEWER] Invalid JSON:\n" << json;
-        QGuiApplication::quit();
-    }
-
-    /* set the viewer background to transparent */
-    QColor color;
-    color.setRedF(0.0);
-    color.setGreenF(0.0);
-    color.setBlueF(0.0);
-    color.setAlphaF(0.0);
-    view.setColor(color);
-    view.setClearBeforeRendering(true);
-
-    MainController controller(&view, jsonObj.value("tcp_servers").toArray(), jsonObj.value("serial_port_servers").toArray(),
-                              jsonObj.value("translate_file").toString(), jsonObj.value("enable_ack").toBool(),
-                              jsonObj.value("enable_heartbeat").toBool(), jsonObj.value("heartbeat_interval").toInt(),
-                              jsonObj.value("screensaver_timeout").toInt(), jsonObj.value("screen_original_brigtness").toInt(),
-                              jsonObj.value("screen_dim_brigtness").toInt(), jsonObj.value("enable_watchdog").toBool());
-
-    controller.setMainViewPath(jsonObj.value("main_view").toString());
-
+    MainController controller(&view, settingsFile.filePath().toLatin1());
 
     /* Fix the path if main_view does not contain a path entry.
        This can happen if a user does a copy from a Windows application to the module. */
@@ -159,7 +113,7 @@ int main(int argc, char *argv[])
     }
 
     /* handle sigquit and sigint to stop the watchdog if it is running */
-    QObject::connect(&app, SIGNAL(aboutToQuit()), &controller, SLOT(handleSigTerm()) );
+    QObject::connect(&app, SIGNAL(aboutToQuit()), &controller, SLOT(handleSigTerm()));
 
     //If there is trouble opening up a serial port don't open the main qml file
     if (controller.getStartUpError().length() == 0)
@@ -168,11 +122,11 @@ int main(int argc, char *argv[])
         view.setSource(QUrl::fromLocalFile(controller.getMainViewPath()));
         view.setResizeMode(QQuickView::SizeRootObjectToView);
 
-        if (jsonObj.value("full_screen").toBool()) {
+        if (controller.showFullScreen()) {
             view.showFullScreen();
         }
 
-        if (jsonObj.value("hide_curosr").toBool()) {
+        if (controller.hideCursor()) {
             view.setCursor(QCursor( Qt::BlankCursor ));
         }
     }

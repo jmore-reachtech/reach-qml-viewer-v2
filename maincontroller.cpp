@@ -2,57 +2,60 @@
 #include <QQmlContext>
 #include "maincontroller.h"
 
-MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray serialServers,
-                               QString translateFile, bool enableAck, bool heartbeat, int heartbeatInterval,
-                               int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness, bool startWatchdog,
+MainController::MainController(MainView *view, QString settingsFilePath,
                                QObject *parent) :
   QObject(parent)
   ,m_view(view)
   ,m_settings(new Settings(this))
-  ,m_screen(new Screen(view, screenSaverTimeout, screenOriginalBrightness, screenDimBrightness, this))
   ,m_heartbeatText(HEARTBEAT_TEXT)
   ,m_heartbeatResponseText(HEARTBEAT_RESPONSE_TEXT)
   ,m_heartbeat_interval(0)
   ,m_hearbeatTimer(new QTimer(this))
-  ,m_watchdog(new Watchdog(this, startWatchdog))
   ,m_errorTimer(new QTimer(this))
+  ,m_appSettings(new ApplicationSettings(this))
 {
-   /* Define objects that can be used in qml */
-    m_view->rootContext()->setContextProperty("connection",this);
-    m_view->rootContext()->setContextProperty("settings", m_settings);
-    m_view->rootContext()->setContextProperty("screen", m_screen);
-    m_view->rootContext()->setContextProperty("watchdog", m_watchdog);
-
-    /* Enable or disable ack */
-    if (enableAck)
-        enableLookupAck();
-    else
-        disableLookupAck();
-
-    /* Enablle or disable heartbeat */
-    connect(m_hearbeatTimer,SIGNAL(timeout()),this,SLOT(onHeartbeatTimerTimeout()));
-    if (heartbeat)
-        enableHeartbeat(heartbeatInterval);
-    else
-        disableHeartbeat();
-
-    /* Add a connection to the view statusChanged signal */
-    connect(m_view, SIGNAL(statusChanged(QQuickView::Status)), this, SLOT(onViewStatusChanged(QQuickView::Status)));
-
-    m_clients = 0;
-    m_enableTranslator = false;
-    m_startUpError = "";
-
-    /* Create the TCP string servers and add connections */
-    int i = 0;
-    foreach(const QJsonValue &v, tcpServers)
+    connect(m_appSettings, SIGNAL(error(QString)),this, SLOT(onAppSettingsError(QString)));
+    /* load setting from the json file */
+    if (m_appSettings->parseJSON(settingsFilePath))
     {
-        if (v.toObject().value("enabled").toBool())
+        m_screen = new Screen(view, m_appSettings->screenSaverTimeout(), m_appSettings->screenOriginalBrigtness(),
+                              m_appSettings->screenDimBrigtness(), this);
+        m_watchdog = new Watchdog(this, m_appSettings->enableWatchdog());
+
+        /* Define objects that can be used in qml */
+        m_view->rootContext()->setContextProperty("connection",this);
+        m_view->rootContext()->setContextProperty("settings", m_settings);
+        m_view->rootContext()->setContextProperty("screen", m_screen);
+        m_view->rootContext()->setContextProperty("watchdog", m_watchdog);
+
+        /* Enable or disable ack */
+        if (m_appSettings->enableAck())
+            enableLookupAck();
+        else
+            disableLookupAck();
+
+        /* Enablle or disable heartbeat */
+        connect(m_hearbeatTimer,SIGNAL(timeout()),this, SLOT(onHeartbeatTimerTimeout()));
+        if (m_appSettings->enableHeartbeat())
+            enableHeartbeat(m_appSettings->heartbeatInterval());
+        else
+            disableHeartbeat();
+
+        /* Add a connection to the view statusChanged signal */
+        connect(m_view, SIGNAL(statusChanged(QQuickView::Status)), this, SLOT(onViewStatusChanged(QQuickView::Status)));
+
+        m_clients = 0;
+        m_enableTranslator = false;
+        m_startUpError = "";
+
+        /* Create the TCP string servers and add connections */
+        int i = 0;
+        foreach(const StringServerSetting &server, m_appSettings->stringServers())
         {
-            StringServer *stringServer =  new StringServer(this, v.toObject().value("port").toInt(), v.toObject().value("parse_json").toBool(),
-                                                           v.toObject().value("translate").toBool(), v.toObject().value("translate_id").toString(),
-                                                           v.toObject().value("primary_connection").toBool());
-            if (v.toObject().value("translate").toBool() == true)
+            StringServer *stringServer =  new StringServer(this, server.port(), server.parseJson(),
+                                                           server.translate(), server.translateId(),
+                                                           server.primaryConnection());
+            if (server.translate())
                 m_enableTranslator = true;
             connect(stringServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
             connect(stringServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
@@ -70,23 +73,20 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
                 delete stringServer;
             }
         }
-    }
 
 
-    /* Create the Serial Servers and add the connections */
-    i = 0;
-    foreach(const QJsonValue &v, serialServers)
-    {
-        if (v.toObject().value("enabled").toBool())
+        /* Create the Serial Servers and add the connections */
+        i = 0;
+        foreach(const SerialServerSetting &server, m_appSettings->serialServers())
         {
-            SerialServer *serialServer = new SerialServer(v, this);
+            SerialServer *serialServer = new SerialServer(server, this);
             connect(serialServer, SIGNAL(ClientConnected()), this, SLOT(onClientConnected()));
             connect(serialServer, SIGNAL(PrimaryConnectionAvailable()), this, SLOT(onPrimaryConnectionAvailable()));
             connect(serialServer, SIGNAL(MessageAvailable(QByteArray, bool, bool, QString))
                     , this, SLOT(onMessageAvailable(QByteArray, bool, bool, QString)));
             connect(serialServer, SIGNAL(Error(QString)), this, SLOT(showError(QString)));
 
-            if (v.toObject().value("translate").toBool() == true)
+            if (server.translate())
                 m_enableTranslator = true;
 
             if (serialServer->Start())
@@ -98,19 +98,21 @@ MainController::MainController(MainView *view, QJsonArray tcpServers, QJsonArray
             {
                 delete serialServer;
             }
+
         }
 
-    }
+        if (m_enableTranslator){
+            /* Initialize the Translator object */
+            m_transLator = new Translator(m_appSettings->translateFile(), this);
+            /* Load and parse the translate file. */
+            m_transLator->loadTranslations();
+        }
 
-    if (m_enableTranslator){
-        /* Initialize the Translator object */
-        m_transLator = new Translator(translateFile, this);
-        /* Load and parse the translate file. */
-        m_transLator->loadTranslations();
+        setMainViewPath(m_appSettings->mainView());
+        m_view->show();
     }
-
-    m_view->show();
 }
+
 
 MainController::~MainController()
 {
@@ -137,6 +139,9 @@ MainController::~MainController()
 
     if (m_errorTimer)
         delete m_errorTimer;
+
+    if (m_appSettings)
+        delete m_appSettings;
 }
 
 
@@ -262,6 +267,7 @@ bool MainController::sendMessage(QString msg)
     return false;
 }
 
+
 void MainController::onMessageAvailable(QByteArray ba, bool parseJson, bool translate, QString translateID)
 {
     QString message(ba);
@@ -319,12 +325,14 @@ void MainController::onMessageAvailable(QByteArray ba, bool parseJson, bool tran
 
 }
 
+
 void MainController::onPrimaryConnectionAvailable()
 {
     m_primaryConnection = QObject::sender();
     m_primaryConnectionClassName = QObject::sender()->metaObject()->className();
     qDebug() << "[QMLVIEWER] Primary connection set to" << QObject::sender()->metaObject()->className() << ":" << QObject::sender()->property("portName").toString();
 }
+
 
 void MainController::enableHeartbeat(int interval)
 {
@@ -333,6 +341,7 @@ void MainController::enableHeartbeat(int interval)
     m_hearbeatTimer->stop();
     m_hearbeatTimer->start((m_heartbeat_interval * 1000));
 }
+
 
 void MainController::enableHeartbeat(int interval, QString heartbeatText, QString heartbeatResponseText)
 {
@@ -343,6 +352,7 @@ void MainController::enableHeartbeat(int interval, QString heartbeatText, QStrin
     m_hearbeatTimer->stop();
     m_hearbeatTimer->start((m_heartbeat_interval * 1000));
 }
+
 
 void MainController::disableHeartbeat()
 {
@@ -370,10 +380,12 @@ void MainController::disableLookupAck()
     emit lookupAckChanged(false);
 }
 
+
 QString MainController::getStartUpError()
 {
     return m_startUpError;
 }
+
 
 void MainController::handleSigTerm()
 {
@@ -382,15 +394,30 @@ void MainController::handleSigTerm()
         m_watchdog->stop();
 }
 
+
 void MainController::setMainViewPath(QString path)
 {
     m_mainViewPath = path;
 }
 
+
 QString MainController::getMainViewPath()
 {
     return m_mainViewPath;
 }
+
+
+bool MainController::showFullScreen()
+{
+    return m_appSettings->fullScreen();
+}
+
+
+bool MainController::hideCursor()
+{
+    return m_appSettings->hideCursor();
+}
+
 
 void MainController::enableLookupAck()
 {
@@ -491,6 +518,7 @@ void MainController::setProperty(QString object, QString property, QString value
 
 }
 
+
 void MainController::onViewStatusChanged(QQuickView::Status status)
 {
     /* Emit the signal right away if the serialserver list is greater than 0.                       */
@@ -500,6 +528,7 @@ void MainController::onViewStatusChanged(QQuickView::Status status)
     else if (status == 0)
         emit notReadyToSend();
 }
+
 
 void MainController::showError(QString errorMessage)
 {
@@ -519,4 +548,20 @@ void MainController::onErrorTimerTimeOut()
 #ifdef Q_OS_WIN
     emit readyToSend();
 #endif
+}
+
+
+void MainController::onAppSettingsError(QString msg)
+{
+    /* error.qml uses the screen object */
+    m_screen = new Screen(m_view, 0, 7, 5, this);
+
+    /* Define object that can be used in qml */
+    m_view->rootContext()->setContextProperty("connection",this);
+    m_view->rootContext()->setContextProperty("screen", m_screen);
+
+    qDebug() << qPrintable(msg.trimmed());
+    m_startUpError = msg.trimmed();
+    m_view->setSource(QUrl(QStringLiteral("qrc:/error.qml")));
+    m_view->show();
 }

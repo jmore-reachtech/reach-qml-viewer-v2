@@ -1,28 +1,26 @@
 #include "serialserver.h"
 #include <QTimer>
 
-SerialServer::SerialServer(const QJsonValue portInfo, QObject *parent) :
+SerialServer::SerialServer(const SerialServerSetting portInfo, QObject *parent) :
     QObject(parent)
    ,m_server(new QSerialPort(this))
 {
-    QJsonObject jsonObj = portInfo.toObject();
+    m_parseJson = portInfo.parseJson();
+    m_translate = portInfo.translate();
+    m_translateID = portInfo.translateId();
+    m_primaryConnection = portInfo.primaryConnection();
+    m_portName = portInfo.portName();
 
-    m_parseJson = jsonObj.value("parse_json").toBool();
-    m_translate = jsonObj.value("translate").toBool();
-    m_translateID = jsonObj.value("translate_id").toString();
-    m_primaryConnection = jsonObj.value("primary_connection").toBool();
-    m_portName = jsonObj.value("port_name").toString();
-
-    m_server->setPortName(jsonObj.value("linux_vm_port").toString());
+    m_server->setPortName(portInfo.linuxVMPort());
 
     if (QSysInfo::buildCpuArchitecture() == "arm")
-        m_server->setPortName(jsonObj.value("linux_target_port").toString());
+        m_server->setPortName(portInfo.linuxTargetPort());
 
-    m_server->setBaudRate(jsonObj.value("baud_rate").toInt(), QSerialPort::AllDirections);
-    m_server->setStopBits(getStopBitsEnum(jsonObj.value("stop_bits").toInt()));
-    m_server->setParity(getParityEnum(jsonObj.value("parity").toString()));
-    m_server->setDataBits(getDataBitsEnum(jsonObj.value("data_bits").toInt()));
-    m_server->setFlowControl(getFlowControlEnum(jsonObj.value("flow_control").toString()));
+    m_server->setBaudRate(portInfo.baudRate(), QSerialPort::AllDirections);
+    m_server->setStopBits(getStopBitsEnum(portInfo.stopBits()));
+    m_server->setParity(getParityEnum(portInfo.parity()));
+    m_server->setDataBits(getDataBitsEnum(portInfo.dataBits()));
+    m_server->setFlowControl(getFlowControlEnum(portInfo.flowControl()));
 }
 
 SerialServer::~SerialServer()

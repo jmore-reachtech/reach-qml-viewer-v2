@@ -7,10 +7,6 @@
 #define APPLICATION_SETTINGS_FILE "/application/src/application.conf"
 #define APPLICATION_SETTINGS_SECTION "Application"
 #define TRANSLATION_FILE_PATH "/application/src/translate.txt"
-
-struct tcp_ports{
-    int port = -1;
-    bool parse_json = false;
-};
+#define SETTINGS_FILE "settings.json"
 
 #endif // SYSTEMDEFS_H
