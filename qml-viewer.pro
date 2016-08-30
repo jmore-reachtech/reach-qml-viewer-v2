@@ -3,7 +3,7 @@ TEMPLATE = app
 QT += qml quick network serialport
 CONFIG += c++11
 
-VERSION = 2.0.2
+VERSION = 2.0.3
 TARGET = qml-viewer
 
 # add #define for the version
@@ -17,7 +17,8 @@ SOURCES += main.cpp \
     translator.cpp \
     screen.cpp \
     settings.cpp \
-    watchdog.cpp
+    watchdog.cpp \
+    applicationsettings.cpp
 
 RESOURCES += \
     qt.qrc
@@ -34,10 +35,8 @@ HEADERS += \
     translator.h \
     screen.h \
     settings.h \
-    watchdog.h
-
-
-OTHER_FILES +=
+    watchdog.h \
+    applicationsettings.h
 
 DISTFILES += \
     settings.json \

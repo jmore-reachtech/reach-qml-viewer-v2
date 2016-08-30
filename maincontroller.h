@@ -15,15 +15,14 @@
 #include "settings.h"
 #include "screen.h"
 #include "watchdog.h"
+#include "applicationsettings.h"
 
 class MainController : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit MainController(MainView *view, QJsonArray tcpServers , QJsonArray serialServers, QString translateFile,
-                            bool enableAck, bool enableHeartBeat, int heartBeatInterval,
-                            int screenSaverTimeout, int screenOriginalBrightness, int screenDimBrightness, bool startWatchdog,
+    explicit MainController(MainView *view, QString settingsFilePath,
                             QObject *parent = 0);
     ~MainController();
 
@@ -49,6 +48,8 @@ public slots:
     void handleSigTerm();
     void setMainViewPath(QString path);
     QString getMainViewPath();
+    bool showFullScreen();
+    bool hideCursor();
 
 private slots:
     void onMessageAvailable(QByteArray ba, bool parseJson, bool translate, QString translateID);
@@ -61,6 +62,7 @@ private slots:
     void onViewStatusChanged(QQuickView::Status status);
     void showError(QString errorMessage);
     void onErrorTimerTimeOut();
+    void onAppSettingsError(QString msg);
 
 private:
     MainView *m_view;
@@ -85,6 +87,7 @@ private:
     Watchdog *m_watchdog;
     QTimer *m_errorTimer;
     QString m_mainViewPath;
+    ApplicationSettings *m_appSettings;
 };
 
 #endif // MAINCONTROLLER_H

@@ -1,33 +1,21 @@
 #include "serialserver.h"
 #include <QTimer>
 
-SerialServer::SerialServer(const QJsonValue portInfo, QObject *parent) :
+SerialServer::SerialServer(const SerialServerSetting portInfo, QObject *parent) :
     QObject(parent)
    ,m_server(new QSerialPort(this))
 {
-    QJsonObject jsonObj = portInfo.toObject();
-
-    m_parseJson = jsonObj.value("parse_json").toBool();
-    m_translate = jsonObj.value("translate").toBool();
-    m_translateID = jsonObj.value("translate_id").toString();
-    m_primaryConnection = jsonObj.value("primary_connection").toBool();
-    m_portName = jsonObj.value("port_name").toString();
-
-#ifdef Q_OS_WIN
-    m_server->setPortName(jsonObj.value("win_port").toString());
-#else
-    m_server->setPortName(jsonObj.value("linux_vm_port").toString());
-#endif
-
-    if (QSysInfo::buildCpuArchitecture() == "arm")
-        m_server->setPortName(jsonObj.value("linux_target_port").toString());
-
-
-    m_server->setBaudRate(jsonObj.value("baud_rate").toInt(), QSerialPort::AllDirections);
-    m_server->setStopBits(getStopBitsEnum(jsonObj.value("stop_bits").toInt()));
-    m_server->setParity(getParityEnum(jsonObj.value("parity").toString()));
-    m_server->setDataBits(getDataBitsEnum(jsonObj.value("data_bits").toInt()));
-    m_server->setFlowControl(getFlowControlEnum(jsonObj.value("flow_control").toString()));
+    m_parseJson = portInfo.parseJson();
+    m_translate = portInfo.translate();
+    m_translateID = portInfo.translateId();
+    m_primaryConnection = portInfo.primaryConnection();
+    m_portName = portInfo.portName();
+    m_server->setPortName(portInfo.winPort());
+    m_server->setBaudRate(portInfo.baudRate(), QSerialPort::AllDirections);
+    m_server->setStopBits(getStopBitsEnum(portInfo.stopBits()));
+    m_server->setParity(getParityEnum(portInfo.parity()));
+    m_server->setDataBits(getDataBitsEnum(portInfo.dataBits()));
+    m_server->setFlowControl(getFlowControlEnum(portInfo.flowControl()));
 }
 
 SerialServer::~SerialServer()
@@ -54,7 +42,6 @@ bool SerialServer::Start()
         qDebug() << "{QMLVIEWER] Error: Could not open serial port " << m_server->portName() << m_server->errorString();
         return false;
     }
-
 }
 
 int SerialServer::Send(QString msg)

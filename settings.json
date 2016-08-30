@@ -15,8 +15,8 @@
         {
             "port_name": "J2_232",
             "physical_port": "J2",
-            "win_port": "COM5",
-			"linux_vm_port": "/dev/USB0",
+            "win_port": "COM12",
+            "linux_vm_port": "/dev/ttyUSB0",
             "linux_target_port": "/dev/ttymxc1",
             "enabled": true,
             "baud_rate": 115200,
@@ -33,7 +33,7 @@
             "port_name": "J25_485",
             "physical_port": "J25",
             "win_port": "COM4",
-			"linux_vm_port": "/dev/USB1",
+            "linux_vm_port": "/dev/ttyUSB1",
             "linux_target_port": "/dev/ttymxc2",
             "enabled": false,
             "baud_rate": 115200,
@@ -50,7 +50,7 @@
             "port_name": "J21_I2C",
             "physical_port": "J21",
             "win_port": "COM3",
-			"linux_vm_port": "/dev/USB2",
+            "linux_vm_port": "/dev/ttyUSB2",
             "linux_target_port": "/dev/ttymxc3",
             "enabled": false,
             "baud_rate": 115200,
@@ -67,16 +67,16 @@
 
     "tcp_servers": [{
             "port": 4000,
-            "parse_json": false,
-            "translate": true,
+            "parse_json": true,
+            "translate": false,
             "translate_id": "M3",
             "primary_connection": false,
-			"enabled": false
+            "enabled": false
         },
 		{
             "port": 3000,
             "parse_json": false,
-            "translate": false,
+            "translate": true,
             "translate_id": "M4",
             "primary_connection": false,
 			"enabled": false
