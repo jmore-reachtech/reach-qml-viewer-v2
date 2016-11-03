@@ -37,8 +37,39 @@ Screen::Screen(QQuickView *view, int screenSaverTimeout, int screenOriginalBrigh
 
 bool Screen::save(const QString &path)
 {
+    //check if the path folder exists
+    QStringList parts = path.split("/");
+    QString folder;
+
+    if (parts.length() > 0)
+        folder = parts.at(0);
+    for (int i=1; i < parts.length()-1; i++)
+        folder.append("/" + parts.at(i));
+
+    QDir dir(folder);
+
+    if (!dir.exists())
+    {
+        if (dir.mkpath(folder))
+            qDebug() << "[QML] created folder" << folder << "for screen save.";
+        else
+        {
+            qDebug() << "{QML] unable to create folder for screen save." << folder << "make sure path is correct." << path;
+            return false;
+        }
+    }
+
     QImage image = m_view->grabWindow();
-    return image.save(path, 0, 80);
+    if (image.save(path, 0, 80))
+    {
+        qDebug() << "[QML] screen save successful at" << path;
+        return true;
+    }
+    else
+    {
+        qDebug() << "[QML] screen save failed at" << path;
+        return false;
+    }
 }
 
 
