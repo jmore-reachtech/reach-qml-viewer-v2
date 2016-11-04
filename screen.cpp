@@ -41,33 +41,41 @@ bool Screen::save(const QString &path)
     QStringList parts = path.split("/");
     QString folder;
 
-    if (parts.length() > 0)
-        folder = parts.at(0);
-    for (int i=1; i < parts.length()-1; i++)
-        folder.append("/" + parts.at(i));
-
-    QDir dir(folder);
-
-    if (!dir.exists())
+    if (parts.length() > 1)
     {
-        if (dir.mkpath(folder))
-            qDebug() << "[QML] created folder" << folder << "for screen save.";
+        folder = parts.at(0);
+
+        for (int i=1; i < parts.length()-1; i++)
+            folder.append("/" + parts.at(i));
+
+        QDir dir(folder);
+
+        if (!dir.exists())
+        {
+            if (dir.mkpath(folder))
+                qDebug() << "[QML] created folder" << folder << "for screen save.";
+            else
+            {
+                qDebug() << "{QML] unable to create folder for screen save." << folder << "make sure path is correct." << path;
+                return false;
+            }
+        }
+
+        QImage image = m_view->grabWindow();
+        if (image.save(path, 0, 80))
+        {
+            qDebug() << "[QML] screen save successful:" << path;
+            return true;
+        }
         else
         {
-            qDebug() << "{QML] unable to create folder for screen save." << folder << "make sure path is correct." << path;
+            qDebug() << "[QML] screen save failed:" << path;
             return false;
         }
     }
-
-    QImage image = m_view->grabWindow();
-    if (image.save(path, 0, 80))
-    {
-        qDebug() << "[QML] screen save successful at" << path;
-        return true;
-    }
     else
     {
-        qDebug() << "[QML] screen save failed at" << path;
+        qDebug() << "[QML] screen save failed.  Need to provide a folder path:" << path;
         return false;
     }
 }
