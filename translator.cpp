@@ -82,12 +82,20 @@ QString Translator::translateGuiMessage(QString message)
 
     /* see if we have a key */
     QString key = message.mid(0, message.indexOf("=")+1);
-    QString value = message.mid(message.indexOf("=")+1);
+    QString value = message.mid(message.indexOf("=")+1, message.length());
 
     if (m_guiHash.contains(key))
     {
         qDebug() << "[TRANSLATE] GUI key found:" << key;
-        return m_guiHash.value(key).message + value;
+
+        //We need to replace %d or %s with the value
+        QString message = m_guiHash.value(key).message;
+        if (message.indexOf("%d") > 0)
+            message = message.replace("%d", value);
+        else if (message.indexOf("%s") > 0)
+            message = message.replace("%s", value);
+
+        return message;
     }
     else if (m_defaultGuiMessage.set)
         return message;

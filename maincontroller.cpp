@@ -181,7 +181,6 @@ bool MainController::sendTCPMessage(QString msg, int port)
 
 
     m_stringServerList.at(numServer)->Send(translatedMessage);
-    qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
     return true;
 }
 
@@ -220,7 +219,6 @@ bool MainController::sendSerialMessage(QString msg, QString portName)
     }
 
     m_serialServerList.at(numServer)->Send(translatedMessage);
-    qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
     return true;
 }
 
@@ -242,7 +240,6 @@ bool MainController::sendMessage(QString msg)
             }
         }
 
-        qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
         qobject_cast<StringServer*>(m_primaryConnection)->Send(translatedMessage);
         return true;
     }
@@ -259,7 +256,6 @@ bool MainController::sendMessage(QString msg)
             }
         }
 
-        qDebug() << "[QMLVIEWER SENT]: " << translatedMessage;
         qobject_cast<SerialServer*>(m_primaryConnection)->Send(translatedMessage);
         return true;
     }
