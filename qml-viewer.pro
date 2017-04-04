@@ -3,6 +3,8 @@ TEMPLATE = app
 QT += qml quick network serialport
 CONFIG += c++11
 
+LIBS += -lasound
+
 VERSION = 2.0.3
 TARGET = qml-viewer
 target.path=/application/bin
@@ -20,7 +22,8 @@ SOURCES += main.cpp \
     screen.cpp \
     settings.cpp \
     watchdog.cpp \
-    applicationsettings.cpp
+    applicationsettings.cpp \
+    beep.cpp
 
 RESOURCES += \
     qt.qrc
@@ -38,7 +41,8 @@ HEADERS += \
     screen.h \
     settings.h \
     watchdog.h \
-    applicationsettings.h
+    applicationsettings.h \
+    beep.h
 
 
 OTHER_FILES +=

@@ -15,18 +15,21 @@ MainController::MainController(MainView *view, QString settingsFilePath,
   ,m_appSettings(new ApplicationSettings(this))
 {
     connect(m_appSettings, SIGNAL(error(QString)),this, SLOT(onAppSettingsError(QString)));
+
     /* load setting from the json file */
     if (m_appSettings->parseJSON(settingsFilePath))
     {
         m_screen = new Screen(view, m_appSettings->screenSaverTimeout(), m_appSettings->screenOriginalBrigtness(),
                               m_appSettings->screenDimBrigtness(), this);
         m_watchdog = new Watchdog(this, m_appSettings->enableWatchdog());
+        m_beep = new Beep(this);
 
         /* Define objects that can be used in qml */
         m_view->rootContext()->setContextProperty("connection",this);
         m_view->rootContext()->setContextProperty("settings", m_settings);
         m_view->rootContext()->setContextProperty("screen", m_screen);
         m_view->rootContext()->setContextProperty("watchdog", m_watchdog);
+        m_view->rootContext()->setContextProperty("beeper", m_beep);
 
         /* Enable or disable ack */
         if (m_appSettings->enableAck())
@@ -108,6 +111,12 @@ MainController::MainController(MainView *view, QString settingsFilePath,
             m_transLator->loadTranslations();
         }
 
+        /* check if we need to load a language translate file */
+        if (m_appSettings->languageFile().length() > 0)
+        {
+            loadLanguageTranslator(m_appSettings->languageFile());
+        }
+
         setMainViewPath(m_appSettings->mainView());
         m_view->show();
     }
@@ -142,6 +151,9 @@ MainController::~MainController()
 
     if (m_appSettings)
         delete m_appSettings;
+
+    if (m_beep)
+        delete(m_beep);
 }
 
 
@@ -560,4 +572,19 @@ void MainController::onAppSettingsError(QString msg)
     m_startUpError = msg.trimmed();
     m_view->setSource(QUrl(QStringLiteral("qrc:/error.qml")));
     m_view->show();
+}
+
+
+void MainController::loadLanguageTranslator(QString languageFile)
+{
+    QTranslator languageTranslator;
+    if (languageTranslator.load(languageFile)) {
+        qDebug() << "[QML] translation file loaded" << languageFile;
+        QGuiApplication::installTranslator(&languageTranslator);
+        // clear the component cache to allow for translations
+        m_view->engine()->clearComponentCache();
+    }
+    else
+        qDebug() << "[QML] translation file load failed for" << languageFile;
+
 }

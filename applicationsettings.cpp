@@ -71,6 +71,12 @@ QString ApplicationSettings::translateFile() const
 }
 
 
+QString ApplicationSettings::languageFile() const
+{
+    return m_languageFile;
+}
+
+
 int ApplicationSettings::heartbeatInterval() const
 {
     return m_heartbeatInterval;
@@ -211,6 +217,7 @@ bool ApplicationSettings::setMembers(QJsonObject jsonObj)
             m_screenOriginalBrigtness = jsonObj.contains("screen_original_brigtness") ? jsonObj.value("screen_original_brigtness").toInt() : 7;
             m_screenDimBrigtness = jsonObj.contains("screen_dim_brigtness") ? jsonObj.value("screen_dim_brigtness").toInt() : 5;
             m_translateFile = jsonObj.contains("translate_file") ? jsonObj.value("translate_file").toString() : "";
+            m_languageFile = jsonObj.contains("language_translate_file") ? jsonObj.value("language_translate_file").toString() : "";
 
             /* set serial port servers */
             foreach(const QJsonValue &v, jsonObj.value("serial_port_servers").toArray())

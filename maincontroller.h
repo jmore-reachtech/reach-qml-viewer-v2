@@ -7,6 +7,8 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QTimer>
+#include <QTranslator>
+#include <QQmlEngine>
 #include "mainview.h"
 #include "stringserver.h"
 #include "serialserver.h"
@@ -16,6 +18,7 @@
 #include "screen.h"
 #include "watchdog.h"
 #include "applicationsettings.h"
+#include "beep.h"
 
 class MainController : public QObject
 {
@@ -63,6 +66,7 @@ private slots:
     void showError(QString errorMessage);
     void onErrorTimerTimeOut();
     void onAppSettingsError(QString msg);
+    void loadLanguageTranslator(QString languageFile);
 
 private:
     MainView *m_view;
@@ -88,6 +92,7 @@ private:
     QTimer *m_errorTimer;
     QString m_mainViewPath;
     ApplicationSettings *m_appSettings;
+    Beep *m_beep;
 };
 
 #endif // MAINCONTROLLER_H

@@ -10,6 +10,7 @@
     "screen_dim_brigtness": 5,
 	"enable_watchdog": false,
     "translate_file": "/application/src/translate.txt",
+    "language_translate_file" : "",
 
     "serial_port_servers": [
         {
