@@ -70,6 +70,11 @@ QString ApplicationSettings::translateFile() const
     return m_translateFile;
 }
 
+int ApplicationSettings::translateMaxMapSize() const
+{
+    return m_translateMaxMapSize;
+}
+
 
 QString ApplicationSettings::languageFile() const
 {
@@ -217,6 +222,7 @@ bool ApplicationSettings::setMembers(QJsonObject jsonObj)
             m_screenOriginalBrigtness = jsonObj.contains("screen_original_brigtness") ? jsonObj.value("screen_original_brigtness").toInt() : 7;
             m_screenDimBrigtness = jsonObj.contains("screen_dim_brigtness") ? jsonObj.value("screen_dim_brigtness").toInt() : 5;
             m_translateFile = jsonObj.contains("translate_file") ? jsonObj.value("translate_file").toString() : "";
+            m_translateMaxMapSize = jsonObj.contains("translate_max_map_size") ? jsonObj.value("translate_max_map_size").toInt() : 400;
             m_languageFile = jsonObj.contains("language_translate_file") ? jsonObj.value("language_translate_file").toString() : "";
 
             /* set serial port servers */

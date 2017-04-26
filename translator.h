@@ -8,7 +8,7 @@
 #include <QTextStream>
 #include <QDebug>
 #include "systemdefs.h"
-#define MAX_MSG_MAP_SIZE 400
+#include <QDateTime>
 
 struct KeyValue{
     QString marker;
@@ -25,7 +25,7 @@ class Translator : public QObject
 {
     Q_OBJECT
 public:
-    explicit Translator(QString translateFile, QObject *parent = 0);
+    explicit Translator(QString translateFile, int translateMaxMapSize, QObject *parent = 0);
     ~Translator();
 signals:
 
@@ -46,6 +46,7 @@ private:
     int m_translationCount;
     DefaultGuiMessage m_defaultGuiMessage;
     QHash<QString, QString> m_mcuDefaultMessages;
+    int m_translateMaxMapSize;
 };
 
 #endif // TRANSLATOR_H

@@ -106,7 +106,7 @@ MainController::MainController(MainView *view, QString settingsFilePath,
 
         if (m_enableTranslator){
             /* Initialize the Translator object */
-            m_transLator = new Translator(m_appSettings->translateFile(), this);
+            m_transLator = new Translator(m_appSettings->translateFile(), m_appSettings->translateMaxMapSize(), this);
             /* Load and parse the translate file. */
             m_transLator->loadTranslations();
         }

@@ -1,10 +1,11 @@
 #include "translator.h"
 
-Translator::Translator(QString translateFile , QObject *parent) :
+Translator::Translator(QString translateFile, int translateMaxMapSize, QObject *parent) :
     QObject(parent)
   ,m_watcher (new QFileSystemWatcher(this))
 {
     m_translateFile = translateFile;
+    m_translateMaxMapSize = translateMaxMapSize;
     if (m_translateFile.length() == 0)
         m_translateFile = TRANSLATION_FILE_PATH;
 
@@ -48,9 +49,9 @@ bool Translator::loadTranslations()
         int i = 1;
         while (!in.atEnd())
         {
-            if (m_translationCount > MAX_MSG_MAP_SIZE)
+            if (m_translationCount > m_translateMaxMapSize)
             {
-                qDebug() << "[TRANSLATE] Too many translation rules, maximum allowed: " << MAX_MSG_MAP_SIZE;
+                qDebug() << "[TRANSLATE] Too many translation rules, maximum allowed: " << m_translateMaxMapSize;
                 break;
             }
 
@@ -87,14 +88,12 @@ QString Translator::translateGuiMessage(QString message)
     if (m_guiHash.contains(key))
     {
         qDebug() << "[TRANSLATE] GUI key found:" << key;
-
         //We need to replace %d or %s with the value
         QString message = m_guiHash.value(key).message;
         if (message.indexOf("%d") > 0)
             message = message.replace("%d", value);
         else if (message.indexOf("%s") > 0)
             message = message.replace("%s", value);
-
         return message;
     }
     else if (m_defaultGuiMessage.set)

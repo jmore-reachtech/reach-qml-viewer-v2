@@ -87,6 +87,7 @@ public:
     int screenDimBrigtness() const;
     bool enableWatchdog() const;
     QString translateFile() const;
+    int translateMaxMapSize() const;
     QString languageFile() const;
 
     QList<SerialServerSetting> serialServers() const;
@@ -112,6 +113,7 @@ private:
     int m_screenDimBrigtness;
     bool m_enableWatchdog;
     QString m_translateFile;
+    int m_translateMaxMapSize;
     QString m_languageFile;
     QList<SerialServerSetting> m_serialServers;
     QList<StringServerSetting> m_stringServers;
